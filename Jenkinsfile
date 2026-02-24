@@ -1,23 +1,42 @@
 pipeline {
     agent any
 
-    stages {
+    environment {
+        IMAGE_NAME = "aneesh-97/jenkins-ci-demo"
+        IMAGE_TAG  = "${BUILD_NUMBER}"
+    }
 
-        stage('Checkout') {
-            steps {
-                echo "Code cloned from GitHub"
-            }
-        }
+    stages {
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t jenkins-ci-demo:${BUILD_NUMBER} .'
+                sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
             }
         }
 
-        stage('Run Container') {
+        stage('Login to DockerHub') {
             steps {
-                sh 'docker run -d -p 5001:5000 jenkins-ci-demo:${BUILD_NUMBER}'
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-creds',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh """
+                        echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin
+                    """
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
+            }
+        }
+
+        stage('Deploy Container') {
+            steps {
+                sh "docker run -d -p 5001:5000 ${IMAGE_NAME}:${IMAGE_TAG}"
             }
         }
     }
