@@ -1,42 +1,24 @@
 pipeline {
     agent any
-
-    environment {
-        IMAGE_NAME = "aneesh-97/jenkins-ci-demo"
-        IMAGE_TAG  = "${BUILD_NUMBER}"
-    }
-
     stages {
-
-        stage('Build Docker Image') {
+        stage('Checkout') {
             steps {
-                sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+                git branch: 'main', url: 'https://github.com/aneesh-97/jenkins-ci-demo/edit/main/Jenkinsfile.git'
             }
         }
-
-        stage('Login to DockerHub') {
+        stage('Build') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-creds',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
-                )]) {
-                    sh """
-                        echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin
-                    """
-                }
+                echo 'Building project...'
             }
         }
-
-        stage('Push Docker Image') {
+        stage('Test') {
             steps {
-                sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
+                echo 'Running tests...'
             }
         }
-
-        stage('Deploy Container') {
+        stage('Deploy') {
             steps {
-                sh "docker run -d -p 5001:5000 ${IMAGE_NAME}:${IMAGE_TAG}"
+                echo 'Deploying application...'
             }
         }
     }
